@@ -46,7 +46,7 @@ const Dashboard = () => {
       try {
         // Fetch user profile
         const userResponse = await fetch(
-          `https://your-backend.onrender.com/api/user/${userId}`
+          `https://postmatic.onrender.com/api/user/${userId}`
         );
         if (!userResponse.ok) throw new Error("Failed to fetch user");
         const { user: fetchedUser } = await userResponse.json();
@@ -55,7 +55,7 @@ const Dashboard = () => {
 
         // Fetch feed (Instagram media)
         const feedResponse = await fetch(
-          `https://your-backend.onrender.com/api/feed/${userId}`
+          `https://postmatic.onrender.com/api/feed/${userId}`
         );
         if (!feedResponse.ok) throw new Error("Failed to fetch feed");
         const { feed } = await feedResponse.json();
@@ -63,7 +63,7 @@ const Dashboard = () => {
 
         // Fetch reels
         const reelsResponse = await fetch(
-          `https://your-backend.onrender.com/api/reels/${userId}`
+          `https://postmatic.onrender.com/api/reels/${userId}`
         );
         if (!reelsResponse.ok) throw new Error("Failed to fetch reels");
         const { reels } = await reelsResponse.json();
@@ -105,7 +105,7 @@ const Dashboard = () => {
 
     try {
       const response = await fetch(
-        `https://your-backend.onrender.com/api/comment/${postId}`,
+        `https://postmatic.onrender.com/api/comment/${postId}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
