@@ -17,6 +17,7 @@ const cleanAccessToken = (token) => {
   return token.replace(/#_=_$/, "");
 };
 
+// Instagram OAuth callback
 app.get("/auth/callback", async (req, res) => {
   const { code } = req.query;
 
@@ -37,45 +38,44 @@ app.get("/auth/callback", async (req, res) => {
           client_id: process.env.FACEBOOK_APP_ID,
           client_secret: process.env.FACEBOOK_APP_SECRET,
           code,
-          redirect_uri: encodeURI(`${process.env.BACKEND_URL}/auth/callback`),
         },
       }
     );
 
-    let { access_token } = tokenResponse.data;
+    let { access_token, user_id } = tokenResponse.data;
     access_token = cleanAccessToken(access_token);
     console.log("Access token received:", access_token);
+    if (!access_token) {
+      console.error("Access token is missing.");
+      return res
+        .status(400)
+        .json({ message: "Access token is missing.", success: false });
+    } 
 
-    const userResponse = await axios.get(
-      "https://graph.facebook.com/v22.0/me?fields=id,name,email,picture",
-      { headers: { Authorization: `Bearer ${access_token}` } }
-    );
-
-    const { id, name, email } = userResponse.data;
-    console.log("User data:", { id, name, email });
-
-    tokenStore.set(id, access_token);
+    // Store token
+    tokenStore.set(user_id, access_token);
 
     if (!process.env.FRONTEND_URL) {
       console.error("FRONTEND_URL is not set");
       return res.status(500).send("Server configuration error");
     }
 
-    const redirectUrl = `${process.env.FRONTEND_URL}/dashboard?userId=${id}`;
+    const redirectUrl = `${process.env.FRONTEND_URL}/dashboard?userId=${user_id}`;
     console.log("Redirecting to:", redirectUrl);
     return res.redirect(redirectUrl);
   } catch (error) {
     console.error(
-      "Facebook Callback Error:",
+      "Instagram Callback Error:",
       error.response?.data || error.message
     );
     return res.status(500).json({
-      message: "Facebook callback failed",
+      message: "Instagram callback failed",
       error: error.response?.data || error.message,
     });
   }
 });
 
+// Fetch Instagram user profile
 app.get("/api/user/:userId", async (req, res) => {
   const { userId } = req.params;
   const access_token = tokenStore.get(userId);
@@ -85,10 +85,12 @@ app.get("/api/user/:userId", async (req, res) => {
   }
 
   try {
-    const userResponse = await axios.get(
-      `https://graph.facebook.com/v22.0/${userId}?fields=id,name,email,picture`,
-      { headers: { Authorization: `Bearer ${access_token}` } }
-    );
+    const userResponse = await axios.get(`https://graph.instagram.com/me`, {
+      params: {
+        fields: "id,username,account_type,media_count,profile_picture_url",
+        access_token,
+      },
+    });
     return res.json({ user: userResponse.data });
   } catch (error) {
     console.error("User fetch error:", error.response?.data || error.message);
@@ -96,6 +98,7 @@ app.get("/api/user/:userId", async (req, res) => {
   }
 });
 
+// Fetch Instagram user media (feed)
 app.get("/api/feed/:userId", async (req, res) => {
   const { userId } = req.params;
   const access_token = tokenStore.get(userId);
@@ -105,14 +108,16 @@ app.get("/api/feed/:userId", async (req, res) => {
   }
 
   try {
-    // Use Instagram Graph API endpoint for user media
     const feedResponse = await axios.get(
-      `https://graph.instagram.com/me/media?fields=id,caption,media_type,media_url,permalink,timestamp&access_token=${access_token}`,
+      `https://graph.instagram.com/me/media`,
       {
-        headers: { Authorization: `Bearer ${access_token}` },
+        params: {
+          fields:
+            "id,caption,media_type,media_url,permalink,thumbnail_url,timestamp",
+          access_token,
+        },
       }
     );
-    console.log("Instagram Feed data:", feedResponse.data);
     return res.json({ feed: feedResponse.data.data });
   } catch (error) {
     console.error(
@@ -123,6 +128,7 @@ app.get("/api/feed/:userId", async (req, res) => {
   }
 });
 
+// Fetch Instagram reels (as videos in media)
 app.get("/api/reels/:userId", async (req, res) => {
   const { userId } = req.params;
   const access_token = tokenStore.get(userId);
@@ -132,13 +138,20 @@ app.get("/api/reels/:userId", async (req, res) => {
   }
 
   try {
-    // Use Instagram Graph API to get reels (stories) - requires specific business account setup
-    const reelsResponse = await axios.get(
-      `https://graph.instagram.com/${userId}/stories?fields=media_url,caption`,
-      { headers: { Authorization: `Bearer ${access_token}` } }
+    const feedResponse = await axios.get(
+      `https://graph.instagram.com/me/media`,
+      {
+        params: {
+          fields: "id,media_type,media_url,caption,permalink,timestamp",
+          access_token,
+        },
+      }
     );
-    console.log("Instagram Reels data:", reelsResponse.data);
-    return res.json({ reels: reelsResponse.data.data });
+    // Filter for videos (reels)
+    const reels = (feedResponse.data.data || []).filter(
+      (item) => item.media_type === "VIDEO"
+    );
+    return res.json({ reels });
   } catch (error) {
     console.error(
       "Instagram Reels fetch error:",
@@ -148,8 +161,9 @@ app.get("/api/reels/:userId", async (req, res) => {
   }
 });
 
-app.post("/api/comment/:postId", async (req, res) => {
-  const { postId } = req.params;
+// Post a comment on a media
+app.post("/api/comment/:mediaId", async (req, res) => {
+  const { mediaId } = req.params;
   const { userId, message } = req.body;
   const access_token = tokenStore.get(userId);
 
@@ -162,11 +176,15 @@ app.post("/api/comment/:postId", async (req, res) => {
   }
 
   try {
-    //Use Instagram API to post comment
     const commentResponse = await axios.post(
-      `https://graph.instagram.com/${postId}/comments`,
-      { message },
-      { headers: { Authorization: `Bearer ${access_token}` } }
+      `https://graph.instagram.com/${mediaId}/comments`,
+      null,
+      {
+        params: {
+          message,
+          access_token,
+        },
+      }
     );
     return res.json({ comment: commentResponse.data });
   } catch (error) {
@@ -175,6 +193,40 @@ app.post("/api/comment/:postId", async (req, res) => {
   }
 });
 
+// Reply to a comment
+app.post("/api/comment/:commentId/reply", async (req, res) => {
+  const { commentId } = req.params;
+  const { userId, message } = req.body;
+  const access_token = tokenStore.get(userId);
+
+  if (!access_token) {
+    return res.status(401).json({ message: "Invalid or expired user" });
+  }
+
+  if (!message) {
+    return res.status(400).json({ message: "Reply message is required" });
+  }
+
+  try {
+    const replyResponse = await axios.post(
+      `https://graph.instagram.com/${commentId}/replies`,
+      null,
+      {
+        params: {
+          message,
+          access_token,
+        },
+      }
+    );
+    return res.json({ reply: replyResponse.data });
+  } catch (error) {
+    console.error("Reply post error:", error.response?.data || error.message);
+    return res.status(500).json({ message: "Failed to post reply" });
+  }
+});
+
+
+// Webhook verification
 app.get("/webhook", (req, res) => {
   const mode = req.query["hub.mode"];
   const token = req.query["hub.verify_token"];
@@ -186,6 +238,7 @@ app.get("/webhook", (req, res) => {
   return res.sendStatus(403);
 });
 
+// Webhook event handler
 app.post("/webhook", (req, res) => {
   console.log("Webhook event received:", req.body);
   return res.status(200).send("EVENT_RECEIVED");

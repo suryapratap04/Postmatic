@@ -2,7 +2,6 @@
 import { useContext, useEffect, useState } from "react";
 import { AppContext } from "../Context/AppContext";
 import { useNavigate } from "react-router-dom";
-import { mockUser, mockPosts, mockReels } from "../data/mock";
 
 interface Post {
   id: string;
@@ -25,6 +24,13 @@ interface User {
   picture?: { data: { url: string } };
 }
 
+interface Comment {
+  id: string;
+  text: string;
+  user: User;
+  replies?: Comment[];
+}
+
 const Dashboard = () => {
   const context = useContext(AppContext);
   if (!context) {
@@ -40,9 +46,11 @@ const Dashboard = () => {
   const [commentInput, setCommentInput] = useState<{ [key: string]: string }>(
     {}
   );
+  const [replyInput, setReplyInput] = useState<{ [key: string]: string }>({});
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [fetchedUserId, setFetchedUserId] = useState<string | null>(null);
   const navigate = useNavigate();
+  const [comments, setComments] = useState<{ [key: string]: Comment[] }>({});
 
   // Fetch user profile
   const fetchUser = async (userId: string) => {
@@ -66,12 +74,7 @@ const Dashboard = () => {
       setFetchedUserId(userId);
     } catch (err: any) {
       console.error("User fetch error:", err);
-      setError("Failed to load user data. Using mock data.");
-      setSelectedUser({
-        id: mockUser.id,
-        name: mockUser.fullName,
-        picture: { data: { url: mockUser.profilePicture } },
-      });
+      setError("Failed to load user data.");
     } finally {
       setLoadingUser(false);
     }
@@ -91,34 +94,14 @@ const Dashboard = () => {
       }
       const { feed } = await feedResponse.json();
       console.log("Fetched feed:", feed);
-
-      if (!feed || feed.length === 0) {
-        console.log("Feed empty, using mock data");
-        setFeed(
-          mockPosts.map((p) => ({
-            id: p.id,
-            caption: p.caption,
-            media_url: p.imageUrl,
-            media_type: "IMAGE",
-            timestamp: p.timestamp,
-          }))
-        );
-        setError("No posts found. Showing mock data.");
-      } else {
-        setFeed(feed);
-      }
+      setFeed(feed);
+      // Fetch comments for each post
+      feed.forEach((post: Post) => {
+        fetchComments(post.id);
+      });
     } catch (err: any) {
       console.error("Feed fetch error:", err);
-      setError("Failed to load feed. Using mock data.");
-      setFeed(
-        mockPosts.map((p) => ({
-          id: p.id,
-          caption: p.caption,
-          media_url: p.imageUrl,
-          media_type: "IMAGE",
-          timestamp: p.timestamp,
-        }))
-      );
+      setError("Failed to load feed.");
     } finally {
       setLoadingFeed(false);
     }
@@ -138,32 +121,34 @@ const Dashboard = () => {
       }
       const { reels } = await reelsResponse.json();
       console.log("Fetched reels:", reels);
-
-      if (!reels || reels.length === 0) {
-        console.log("Reels empty, using mock data");
-        setReels(
-          mockReels.map((r) => ({
-            id: r.id,
-            media_url: r.thumbnail,
-            caption: r.caption,
-          }))
-        );
-        setError("No reels found. Showing mock data.");
-      } else {
-        setReels(reels);
-      }
+      setReels(reels);
     } catch (err: any) {
       console.error("Reels fetch error:", err);
-      setError("Failed to load reels. Using mock data.");
-      setReels(
-        mockReels.map((r) => ({
-          id: r.id,
-          media_url: r.thumbnail,
-          caption: r.caption,
-        }))
-      );
+      setError("Failed to load reels.");
     } finally {
       setLoadingReels(false);
+    }
+  };
+
+  // Fetch comments for a post
+  const fetchComments = async (postId: string) => {
+    try {
+      const commentsResponse = await fetch(
+        `https://postmatic.onrender.com/api/comments/${postId}` // Assuming you have an endpoint to fetch comments
+      );
+      if (!commentsResponse.ok) {
+        throw new Error(
+          `Comments fetch failed: ${commentsResponse.statusText}`
+        );
+      }
+      const { comments: fetchedComments } = await commentsResponse.json();
+      setComments((prevComments) => ({
+        ...prevComments,
+        [postId]: fetchedComments,
+      }));
+    } catch (err: any) {
+      console.error("Comments fetch error:", err);
+      setError("Failed to load comments.");
     }
   };
 
@@ -209,9 +194,45 @@ const Dashboard = () => {
       }
       console.log("Comment posted for post:", postId);
       setCommentInput({ ...commentInput, [postId]: "" });
+      // Refresh comments after posting
+      fetchComments(postId);
     } catch (err: any) {
       setError("Failed to post comment");
       console.error("Comment error:", err);
+    }
+  };
+
+  const handleReplySubmit = async (commentId: string) => {
+    if (!user || !replyInput[commentId]) return;
+
+    try {
+      const response = await fetch(
+        `https://postmatic.onrender.com/api/comment/${commentId}/reply`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: user.id,
+            message: replyInput[commentId],
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Reply failed: ${response.statusText}`);
+      }
+      console.log("Reply posted for comment:", commentId);
+      setReplyInput({ ...replyInput, [commentId]: "" });
+      // Refresh comments after posting a reply
+      const postId = Object.keys(comments).find((key) =>
+        comments[key]?.find((comment) => comment.id === commentId)
+      );
+      if (postId) {
+        fetchComments(postId);
+      }
+    } catch (err: any) {
+      setError("Failed to post reply");
+      console.error("Reply error:", err);
     }
   };
 
@@ -227,7 +248,7 @@ const Dashboard = () => {
     );
   }
 
-  if (error && !selectedUser) {
+  if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <h3 className="text-red-500">{error}</h3>
@@ -238,7 +259,6 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <h1 className="text-3xl font-bold text-center mb-6">Dashboard</h1>
-
       <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Profile Section */}
         <div className="md:col-span-1">
@@ -247,17 +267,9 @@ const Dashboard = () => {
               <h2 className="text-2xl font-semibold mb-4">Profile</h2>
               <div className="flex items-center space-x-4">
                 <img
-                  src={
-                    selectedUser.picture?.data.url || mockUser.profilePicture
-                  }
+                  src={selectedUser.picture?.data.url}
                   alt="Profile"
                   className="w-16 h-16 rounded-full"
-                  onLoad={() =>
-                    console.log(
-                      "Profile picture loaded:",
-                      selectedUser.picture?.data.url || mockUser.profilePicture
-                    )
-                  }
                 />
                 <div>
                   <h3 className="text-xl font-medium">{selectedUser.name}</h3>
@@ -273,14 +285,14 @@ const Dashboard = () => {
                   className="w-full px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
                   disabled={loadingFeed}
                 >
-                  {loadingFeed ? "Loading Feed..." : "View Feed"}
+                  {loadingFeed ? "View Feed" : "Loading Feed..."}
                 </button>
                 <button
                   onClick={() => fetchReels(selectedUser.id)}
                   className="w-full px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
                   disabled={loadingReels}
                 >
-                  {loadingReels ? "Loading Reels..." : "View Reels"}
+                  {loadingReels ? "View Reels" : "Loading Reels..."}
                 </button>
               </div>
             </div>
@@ -292,8 +304,10 @@ const Dashboard = () => {
           {/* Feed Section */}
           <div>
             <h2 className="text-2xl font-semibold mb-4">Feed</h2>
-            {feed.length === 0 ? (
-              <p className="text-gray-500">Click "View Feed" to load posts.</p>
+            {loadingFeed ? (
+              <p className="text-gray-500">Loading feed...</p>
+            ) : feed.length === 0 ? (
+              <p className="text-gray-500">No posts available.</p>
             ) : (
               feed.map((post) => (
                 <div
@@ -315,9 +329,6 @@ const Dashboard = () => {
                       src={post.media_url}
                       alt="Post"
                       className="mt-2 max-w-md rounded mx-auto"
-                      onLoad={() =>
-                        console.log("Post image loaded:", post.media_url)
-                      }
                     />
                   ) : (
                     <video
@@ -346,6 +357,62 @@ const Dashboard = () => {
                       Comment
                     </button>
                   </div>
+
+                  {/* Display Comments and Replies */}
+                  <div className="mt-4">
+                    {comments[post.id] &&
+                      comments[post.id].map((comment) => (
+                        <div
+                          key={comment.id}
+                          className="mt-2 p-2 bg-gray-100 rounded"
+                        >
+                          <p>
+                            {comment.text}
+                            <span className="text-sm text-gray-500">
+                              {" "}
+                              — {comment.user.name}
+                            </span>
+                          </p>
+                          {comment.replies &&
+                            comment.replies.map((reply) => (
+                              <div
+                                key={reply.id}
+                                className="mt-1 ml-4 p-2 bg-gray-50 rounded"
+                              >
+                                <p>
+                                  {reply.text}
+                                  <span className="text-sm text-gray-500">
+                                    {" "}
+                                    — {reply.user.name}
+                                  </span>
+                                </p>
+                              </div>
+                            ))}
+
+                          {/* Reply Input */}
+                          <div className="mt-2">
+                            <input
+                              type="text"
+                              value={replyInput[comment.id] || ""}
+                              onChange={(e) =>
+                                setReplyInput({
+                                  ...replyInput,
+                                  [comment.id]: e.target.value,
+                                })
+                              }
+                              placeholder="Write a reply..."
+                              className="w-full p-2 border rounded"
+                            />
+                            <button
+                              onClick={() => handleReplySubmit(comment.id)}
+                              className="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                            >
+                              Reply
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
                 </div>
               ))
             )}
@@ -354,8 +421,10 @@ const Dashboard = () => {
           {/* Reels Section */}
           <div>
             <h2 className="text-2xl font-semibold mb-4">Reels</h2>
-            {reels.length === 0 ? (
-              <p className="text-gray-500">Click "View Reels" to load reels.</p>
+            {loadingReels ? (
+              <p className="text-gray-500">Loading reels...</p>
+            ) : reels.length === 0 ? (
+              <p className="text-gray-500">No reels available.</p>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {reels.map((reel) => (
@@ -376,9 +445,6 @@ const Dashboard = () => {
                       src={reel.media_url}
                       alt="Reel"
                       className="mt-2 max-w-xs aspect-[9/16] rounded mx-auto"
-                      onLoad={() =>
-                        console.log("Reel thumbnail loaded:", reel.media_url)
-                      }
                     />
                     <div className="mt-4">
                       <input
