@@ -30,17 +30,15 @@ app.get("/auth/callback", async (req, res) => {
   console.log("Received authorization code:", code);
 
   try {
-    // Exchange code for access token
     const tokenResponse = await axios.post(
-      "https://api.instagram.com/oauth/access_token",
+      "https://graph.facebook.com/v22.0/oauth/access_token",
       null,
       {
         params: {
           client_id: process.env.FACEBOOK_APP_ID,
           client_secret: process.env.FACEBOOK_APP_SECRET,
-          grant_type: "authorization_code",
-          redirect_uri: `${process.env.BACKEND_URL}/auth/callback`,
-          code: code,
+          code,
+          redirect_uri: encodeURI(`${process.env.BACKEND_URL}/auth/callback`),
         },
       }
     );
