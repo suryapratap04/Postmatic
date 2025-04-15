@@ -79,11 +79,11 @@ const Dashboard = () => {
         const { reels } = await reelsResponse.json();
         console.log("Fetched reels:", reels);
 
-        setUser(fetchedUser); 
+        setUser(fetchedUser);
         setSelectedUser(fetchedUser);
         setFeed(feed || []);
         setReels(reels || []);
-        setFetchedUserId(userId); 
+        setFetchedUserId(userId);
         setError(null);
       } catch (err: any) {
         setError(err.message || "Failed to load data");
@@ -101,7 +101,6 @@ const Dashboard = () => {
       );
     }
 
-    // Get userId from URL or context
     const urlParams = new URLSearchParams(window.location.search);
     const userId = urlParams.get("userId");
 
@@ -114,7 +113,8 @@ const Dashboard = () => {
       setLoading(false);
       navigate("/");
     }
-  }, [user?.id, isLoggedIn, navigate]); 
+  }, []);
+
   const handleCommentSubmit = async (postId: string) => {
     if (!user || !commentInput[postId]) return;
 
