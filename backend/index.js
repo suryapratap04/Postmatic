@@ -38,9 +38,7 @@ app.get("/auth/callback", async (req, res) => {
           client_id: process.env.FACEBOOK_APP_ID,
           client_secret: process.env.FACEBOOK_APP_SECRET,
           code: code,
-          redirect_uri: encodeURI(
-            `${process.env.BACKEND_URL}/auth/callback`
-          ),
+          redirect_uri: encodeURI(`${process.env.BACKEND_URL}/auth/callback`),
         },
       }
     );
@@ -61,8 +59,10 @@ app.get("/auth/callback", async (req, res) => {
     console.log("User response:", userResponse.data);
 
     const { id, name, email } = userResponse.data;
-    console.log("User data:", { id, name, email });
-    return res.redirect(`${process.env.FRONTEND_URL}/dashboard?token=${token}`);
+    console.log("User data:", userResponse.data);
+    return res.redirect(
+      `${process.env.FRONTEND_URL}/dashboard?token=${access_token}`
+    );
   } catch (error) {
     console.error(
       "Facebook Callback Error:",
