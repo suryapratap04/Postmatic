@@ -43,25 +43,25 @@ app.get("/auth/callback", async (req, res) => {
       }
     );
 
-    let { access_token, user_id } = tokenResponse.data;
+    let { access_token } = tokenResponse.data;
     access_token = cleanAccessToken(access_token);
-    console.log("Access token received:", access_token);
-    if (!access_token) {
-      console.error("Access token is missing.");
-      return res
-        .status(400)
-        .json({ message: "Access token is missing.", success: false });
-    } 
 
-    // Store token
-    tokenStore.set(user_id, access_token);
+    const userResponse = await axios.get(
+      "https://graph.facebook.com/v22.0/me?fields=id,name,email,picture",
+      { headers: { Authorization: `Bearer ${access_token}` } }
+    );
+
+    const { id, name } = userResponse.data;
+    console.log("User data:", { id, name });
+
+    tokenStore.set(id, access_token);
 
     if (!process.env.FRONTEND_URL) {
       console.error("FRONTEND_URL is not set");
       return res.status(500).send("Server configuration error");
     }
 
-    const redirectUrl = `${process.env.FRONTEND_URL}/dashboard?userId=${user_id}`;
+    const redirectUrl = `${process.env.FRONTEND_URL}/dashboard?userId=${id}`;
     console.log("Redirecting to:", redirectUrl);
     return res.redirect(redirectUrl);
   } catch (error) {
