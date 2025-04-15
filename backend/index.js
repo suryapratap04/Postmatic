@@ -33,7 +33,7 @@ app.get("/auth/callback", async (req, res) => {
 
   try {
     const tokenResponse = await axios.post(
-      "https://graph.facebook.com/v16.0/oauth/access_token",
+      "https://graph.facebook.com/v22.0/oauth/access_token",
       null,
       {
         params: {
@@ -50,7 +50,7 @@ app.get("/auth/callback", async (req, res) => {
     console.log("Access token received:", access_token);
 
     const userResponse = await axios.get(
-      "https://graph.facebook.com/v16.0/me?fields=id,name,email,picture",
+      "https://graph.facebook.com/v22.0/me?fields=id,name,email,picture",
       { headers: { Authorization: `Bearer ${access_token}` } }
     );
 
@@ -89,7 +89,7 @@ app.get("/api/user/:userId", async (req, res) => {
 
   try {
     const userResponse = await axios.get(
-      `https://graph.facebook.com/v16.0/${userId}?fields=id,name,email,picture`,
+      `https://graph.facebook.com/v22.0/${userId}?fields=id,name,email,picture`,
       { headers: { Authorization: `Bearer ${access_token}` } }
     );
     return res.json({ user: userResponse.data });
@@ -109,7 +109,7 @@ app.get("/api/feed/:userId", async (req, res) => {
 
   try {
     const feedResponse = await axios.get(
-      `https://graph.facebook.com/v16.0/${userId}/feed?fields=id,message,created_time,attachments`,
+      `https://graph.facebook.com/v22.0/${userId}/feed?fields=id,message,created_time,attachments`,
       { headers: { Authorization: `Bearer ${access_token}` } }
     );
     console.log("Feed data:", feedResponse);
@@ -130,7 +130,7 @@ app.get("/api/reels/:userId", async (req, res) => {
 
   try {
     const reelsResponse = await axios.get(
-      `https://graph.facebook.com/v16.0/${userId}/videos?fields=id,title,description,source`,
+      `https://graph.facebook.com/v22.0/${userId}/videos?fields=id,title,description,source`,
       { headers: { Authorization: `Bearer ${access_token}` } }
     );
     console.log("Reels data:", reelsResponse);
@@ -156,7 +156,7 @@ app.post("/api/comment/:postId", async (req, res) => {
 
   try {
     const commentResponse = await axios.post(
-      `https://graph.facebook.com/v16.0/${postId}/comments`,
+      `https://graph.facebook.com/v22.0/${postId}/comments`,
       { message },
       { headers: { Authorization: `Bearer ${access_token}` } }
     );
