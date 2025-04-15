@@ -90,7 +90,7 @@ app.get("/api/user/:userId", async (req, res) => {
   try {
     console.log("Fetching user data for userId:", userId);
     const userResponse = await axios.get(
-      `https://graph.instagram.com/me?fields=id,username,account_type,media_count,profile_picture_url`,
+      `https://graph.facebook.com/v16.0/${userId}?fields=id,name,email,picture`,
       { headers: { Authorization: `Bearer ${access_token}` } }
     );
     console.log("User data response:", userResponse.data);
