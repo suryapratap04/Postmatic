@@ -2,6 +2,7 @@
 import { useContext, useEffect, useState } from "react";
 import { AppContext } from "../Context/AppContext";
 import { useNavigate } from "react-router-dom";
+import { mockUser, mockPosts, mockReels } from "../data/mock";
 
 interface Post {
   id: string;
@@ -32,7 +33,9 @@ const Dashboard = () => {
   const { user, setUser, isLoggedIn } = context;
   const [feed, setFeed] = useState<Post[]>([]);
   const [reels, setReels] = useState<Reel[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loadingUser, setLoadingUser] = useState(false);
+  const [loadingFeed, setLoadingFeed] = useState(false);
+  const [loadingReels, setLoadingReels] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [commentInput, setCommentInput] = useState<{ [key: string]: string }>(
     {}
@@ -41,58 +44,107 @@ const Dashboard = () => {
   const [fetchedUserId, setFetchedUserId] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const fetchData = async (userId: string) => {
-      if (fetchedUserId === userId) return;
+  // Fetch user profile
+  const fetchUser = async (userId: string) => {
+    if (fetchedUserId === userId) return;
 
-      setLoading(true);
-      setError(null);
+    setLoadingUser(true);
+    setError(null);
 
-      try {
-        // Fetch user profile
-        const userResponse = await fetch(
-          `https://postmatic.onrender.com/api/user/${userId}`
-        );
-        if (!userResponse.ok) {
-          throw new Error(`User fetch failed: ${userResponse.statusText}`);
-        }
-        const { user: fetchedUser } = await userResponse.json();
-        console.log("Fetched user:", fetchedUser);
-
-        // Fetch feed
-        const feedResponse = await fetch(
-          `https://postmatic.onrender.com/api/feed/${userId}`
-        );
-        if (!feedResponse.ok) {
-          throw new Error(`Feed fetch failed: ${feedResponse.statusText}`);
-        }
-        const { feed } = await feedResponse.json();
-        console.log("Fetched feed:", feed);
-
-        // Fetch reels
-        const reelsResponse = await fetch(
-          `https://postmatic.onrender.com/api/reels/${userId}`
-        );
-        if (!reelsResponse.ok) {
-          throw new Error(`Reels fetch failed: ${reelsResponse.statusText}`);
-        }
-        const { reels } = await reelsResponse.json();
-        console.log("Fetched reels:", reels);
-
-        setUser(fetchedUser);
-        setSelectedUser(fetchedUser);
-        setFeed(feed || []);
-        setReels(reels || []);
-        setFetchedUserId(userId);
-        setError(null);
-      } catch (err: any) {
-        setError(err.message || "Failed to load data");
-        console.error("Fetch error:", err);
-      } finally {
-        setLoading(false);
+    try {
+      const userResponse = await fetch(
+        `https://postmatic.onrender.com/api/user/${userId}`
+      );
+      if (!userResponse.ok) {
+        throw new Error(`User fetch failed: ${userResponse.statusText}`);
       }
-    };
+      const { user: fetchedUser } = await userResponse.json();
+      console.log("Fetched user:", fetchedUser);
 
+      setUser(fetchedUser);
+      setSelectedUser(fetchedUser);
+      setFetchedUserId(userId);
+    } catch (err: any) {
+      console.error("User fetch error:", err);
+      setError("Failed to load user data. Using mock data.");
+      // Mock fallback
+      setSelectedUser({
+        id: mockUser.id,
+        name: mockUser.fullName,
+        picture: { data: { url: mockUser.profilePicture } },
+      });
+    } finally {
+      setLoadingUser(false);
+    }
+  };
+
+  // Fetch feed
+  const fetchFeed = async (userId: string) => {
+    setLoadingFeed(true);
+    setError(null);
+
+    try {
+      const feedResponse = await fetch(
+        `https://postmatic.onrender.com/api/feed/${userId}`
+      );
+      if (!feedResponse.ok) {
+        throw new Error(`Feed fetch failed: ${feedResponse.statusText}`);
+      }
+      const { feed } = await feedResponse.json();
+      console.log("Fetched feed:", feed);
+
+      setFeed(feed || []);
+    } catch (err: any) {
+      console.error("Feed fetch error:", err);
+      setError("Failed to load feed. Using mock data.");
+      // Mock fallback
+      setFeed(
+        mockPosts.map((p) => ({
+          id: p.id,
+          caption: p.caption,
+          media_url: p.imageUrl,
+          media_type: "IMAGE",
+          timestamp: p.timestamp,
+        }))
+      );
+    } finally {
+      setLoadingFeed(false);
+    }
+  };
+
+  // Fetch reels
+  const fetchReels = async (userId: string) => {
+    setLoadingReels(true);
+    setError(null);
+
+    try {
+      const reelsResponse = await fetch(
+        `https://postmatic.onrender.com/api/reels/${userId}`
+      );
+      if (!reelsResponse.ok) {
+        throw new Error(`Reels fetch failed: ${reelsResponse.statusText}`);
+      }
+      const { reels } = await reelsResponse.json();
+      console.log("Fetched reels:", reels);
+
+      setReels(reels || []);
+    } catch (err: any) {
+      console.error("Reels fetch error:", err);
+      setError("Failed to load reels. Using mock data.");
+      // Mock fallback
+      setReels(
+        mockReels.map((r) => ({
+          id: r.id,
+          media_url: r.thumbnail, // Use thumbnail for reels
+          caption: r.caption,
+        }))
+      );
+    } finally {
+      setLoadingReels(false);
+    }
+  };
+
+  useEffect(() => {
     if (window.location.hash === "#_=_") {
       window.history.replaceState(
         null,
@@ -105,12 +157,11 @@ const Dashboard = () => {
     const userId = urlParams.get("userId");
 
     if (userId) {
-      fetchData(userId);
+      fetchUser(userId);
     } else if (user && isLoggedIn) {
-      fetchData(user.id);
+      fetchUser(user.id);
     } else {
       setError("Please log in");
-      setLoading(false);
       navigate("/");
     }
   }, []);
@@ -145,7 +196,7 @@ const Dashboard = () => {
     setSelectedUser(userData);
   };
 
-  if (loading) {
+  if (loadingUser) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-blue-500"></div>
@@ -153,7 +204,7 @@ const Dashboard = () => {
     );
   }
 
-  if (error) {
+  if (error && !selectedUser) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <h3 className="text-red-500">{error}</h3>
@@ -172,13 +223,19 @@ const Dashboard = () => {
             <div className="bg-white p-6 rounded-lg shadow-md sticky top-6">
               <h2 className="text-2xl font-semibold mb-4">Profile</h2>
               <div className="flex items-center space-x-4">
-                {selectedUser.picture && (
-                  <img
-                    src={selectedUser.picture.data.url}
-                    alt="Profile"
-                    className="w-16 h-16 rounded-full"
-                  />
-                )}
+                <img
+                  src={
+                    selectedUser.picture?.data.url || mockUser.profilePicture
+                  }
+                  alt="Profile"
+                  className="w-16 h-16 rounded-full"
+                  onLoad={() =>
+                    console.log(
+                      "Profile picture loaded:",
+                      selectedUser.picture?.data.url || mockUser.profilePicture
+                    )
+                  }
+                />
                 <div>
                   <h3 className="text-xl font-medium">{selectedUser.name}</h3>
                   <p className="text-gray-600">
@@ -186,6 +243,22 @@ const Dashboard = () => {
                   </p>
                   <p className="text-gray-500">ID: {selectedUser.id}</p>
                 </div>
+              </div>
+              <div className="mt-4 space-y-2">
+                <button
+                  onClick={() => fetchFeed(selectedUser.id)}
+                  className="w-full px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                  disabled={loadingFeed}
+                >
+                  {loadingFeed ? "Loading Feed..." : "View Feed"}
+                </button>
+                <button
+                  onClick={() => fetchReels(selectedUser.id)}
+                  className="w-full px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                  disabled={loadingReels}
+                >
+                  {loadingReels ? "Loading Reels..." : "View Reels"}
+                </button>
               </div>
             </div>
           )}
@@ -197,7 +270,7 @@ const Dashboard = () => {
           <div>
             <h2 className="text-2xl font-semibold mb-4">Feed</h2>
             {feed.length === 0 ? (
-              <p className="text-gray-500">No posts available.</p>
+              <p className="text-gray-500">Click "View Feed" to load posts.</p>
             ) : (
               feed.map((post) => (
                 <div
@@ -218,13 +291,16 @@ const Dashboard = () => {
                     <img
                       src={post.media_url}
                       alt="Post"
-                      className="mt-2 max-w-full rounded"
+                      className="mt-2 max-w-md rounded mx-auto"
+                      onLoad={() =>
+                        console.log("Post image loaded:", post.media_url)
+                      }
                     />
                   ) : (
                     <video
                       src={post.media_url}
                       controls
-                      className="mt-2 w-full rounded"
+                      className="mt-2 max-w-md rounded mx-auto"
                     />
                   )}
                   <div className="mt-4">
@@ -256,7 +332,7 @@ const Dashboard = () => {
           <div>
             <h2 className="text-2xl font-semibold mb-4">Reels</h2>
             {reels.length === 0 ? (
-              <p className="text-gray-500">No reels available.</p>
+              <p className="text-gray-500">Click "View Reels" to load reels.</p>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {reels.map((reel) => (
@@ -273,10 +349,13 @@ const Dashboard = () => {
                     <p className="text-gray-600">
                       {reel.caption || "No caption"}
                     </p>
-                    <video
+                    <img
                       src={reel.media_url}
-                      controls
-                      className="mt-2 w-full rounded"
+                      alt="Reel"
+                      className="mt-2 max-w-xs aspect-[9/16] rounded mx-auto"
+                      onLoad={() =>
+                        console.log("Reel thumbnail loaded:", reel.media_url)
+                      }
                     />
                     <div className="mt-4">
                       <input
