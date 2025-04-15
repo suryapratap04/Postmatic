@@ -38,7 +38,9 @@ app.get("/auth/callback", async (req, res) => {
           client_id: process.env.FACEBOOK_APP_ID,
           client_secret: process.env.FACEBOOK_APP_SECRET,
           code: code,
-          redirect_uri: encodeURI(`${BACKEND_URL}/auth/facebook/callback`),
+          redirect_uri: encodeURI(
+            `${process.env.BACKEND_URL}/auth/callback`
+          ),
         },
       }
     );
