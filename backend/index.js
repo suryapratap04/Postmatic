@@ -30,38 +30,34 @@ app.get("/auth/callback", async (req, res) => {
   console.log("Received authorization code:", code);
 
   try {
+    // Exchange code for access token
     const tokenResponse = await axios.post(
-      "https://graph.facebook.com/v22.0/oauth/access_token",
+      "https://api.instagram.com/oauth/access_token",
       null,
       {
         params: {
           client_id: process.env.FACEBOOK_APP_ID,
           client_secret: process.env.FACEBOOK_APP_SECRET,
-          code,
-          redirect_uri: encodeURI(`${process.env.BACKEND_URL}/auth/callback`),
+          grant_type: "authorization_code",
+          redirect_uri: `${process.env.BACKEND_URL}/auth/callback`,
+          code: code,
         },
       }
     );
 
-    let { access_token } = tokenResponse.data;
+    let { access_token, user_id } = tokenResponse.data;
     access_token = cleanAccessToken(access_token);
+    console.log("Access token received:", access_token);
 
-    const userResponse = await axios.get(
-      "https://graph.facebook.com/v22.0/me?fields=id,name,email,picture",
-      { headers: { Authorization: `Bearer ${access_token}` } }
-    );
-
-    const { id, name } = userResponse.data;
-    console.log("User data:", { id, name });
-
-    tokenStore.set(id, access_token);
+    // Store token
+    tokenStore.set(user_id, access_token);
 
     if (!process.env.FRONTEND_URL) {
       console.error("FRONTEND_URL is not set");
       return res.status(500).send("Server configuration error");
     }
 
-    const redirectUrl = `${process.env.FRONTEND_URL}/dashboard?userId=${id}`;
+    const redirectUrl = `${process.env.FRONTEND_URL}/dashboard?userId=${user_id}`;
     console.log("Redirecting to:", redirectUrl);
     return res.redirect(redirectUrl);
   } catch (error) {
@@ -86,12 +82,25 @@ app.get("/api/user/:userId", async (req, res) => {
   }
 
   try {
-    const userResponse = await axios.get(`https://graph.instagram.com/me`, {
-      params: {
-        fields: "id,username,account_type,media_count,profile_picture_url",
-        access_token,
-      },
-    });
+    console.log("Fetching user data for userId:", userId);
+    const userResponse = await axios.get(
+      `https://graph.instagram.com/me?fields=id,username,account_type,media_count,profile_picture_url`,
+      {
+        params: {
+          access_token,
+        },
+      }
+    );
+    console.log("User data response:", userResponse.data);
+
+    if (userResponse.data.error) {
+      console.error("Instagram API error:", userResponse.data.error);
+      return res.status(500).json({
+        message: "Failed to fetch user data",
+        error: userResponse.data.error,
+      });
+    }
+
     return res.json({ user: userResponse.data });
   } catch (error) {
     console.error("User fetch error:", error.response?.data || error.message);
@@ -225,7 +234,6 @@ app.post("/api/comment/:commentId/reply", async (req, res) => {
     return res.status(500).json({ message: "Failed to post reply" });
   }
 });
-
 
 // Webhook verification
 app.get("/webhook", (req, res) => {
