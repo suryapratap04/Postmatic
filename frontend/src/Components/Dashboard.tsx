@@ -67,7 +67,6 @@ const Dashboard = () => {
     } catch (err: any) {
       console.error("User fetch error:", err);
       setError("Failed to load user data. Using mock data.");
-      // Mock fallback
       setSelectedUser({
         id: mockUser.id,
         name: mockUser.fullName,
@@ -93,11 +92,24 @@ const Dashboard = () => {
       const { feed } = await feedResponse.json();
       console.log("Fetched feed:", feed);
 
-      setFeed(feed || []);
+      if (!feed || feed.length === 0) {
+        console.log("Feed empty, using mock data");
+        setFeed(
+          mockPosts.map((p) => ({
+            id: p.id,
+            caption: p.caption,
+            media_url: p.imageUrl,
+            media_type: "IMAGE",
+            timestamp: p.timestamp,
+          }))
+        );
+        setError("No posts found. Showing mock data.");
+      } else {
+        setFeed(feed);
+      }
     } catch (err: any) {
       console.error("Feed fetch error:", err);
       setError("Failed to load feed. Using mock data.");
-      // Mock fallback
       setFeed(
         mockPosts.map((p) => ({
           id: p.id,
@@ -127,15 +139,26 @@ const Dashboard = () => {
       const { reels } = await reelsResponse.json();
       console.log("Fetched reels:", reels);
 
-      setReels(reels || []);
+      if (!reels || reels.length === 0) {
+        console.log("Reels empty, using mock data");
+        setReels(
+          mockReels.map((r) => ({
+            id: r.id,
+            media_url: r.thumbnail,
+            caption: r.caption,
+          }))
+        );
+        setError("No reels found. Showing mock data.");
+      } else {
+        setReels(reels);
+      }
     } catch (err: any) {
       console.error("Reels fetch error:", err);
       setError("Failed to load reels. Using mock data.");
-      // Mock fallback
       setReels(
         mockReels.map((r) => ({
           id: r.id,
-          media_url: r.thumbnail, // Use thumbnail for reels
+          media_url: r.thumbnail,
           caption: r.caption,
         }))
       );
