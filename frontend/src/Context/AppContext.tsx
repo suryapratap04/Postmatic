@@ -35,10 +35,9 @@ export default function AppContextProvider({
   const handleLogin = async () => {
     // setIsLoggedIn(true);
     // setShowLoginModal(false);
-    const redirectUri = `${process.env.REACT_APP_BACKEND_URL}/auth/callback`;
-    const instagramAuthUrl = `https://www.facebook.com/v16.0/dialog/oauth?client_id=${
-      process.env.REACT_APP_FACEBOOK_APP_ID
-    }&redirect_uri=${encodeURIComponent(
+    // console.log(process.env.VITE_FACEBOOK_APP_ID);
+    const redirectUri = `https://postmatic.onrender.com/auth/callback`;
+    const instagramAuthUrl = `https://www.facebook.com/v16.0/dialog/oauth?client_id=${1384533765881235}&redirect_uri=${encodeURIComponent(
       redirectUri
     )}&scope=instagram_basic,instagram_content_publish,instagram_manage_comments&response_type=code`;
     window.location.href = instagramAuthUrl;
