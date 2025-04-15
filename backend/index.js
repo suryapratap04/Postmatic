@@ -10,7 +10,8 @@ const VERIFY_TOKEN = "socialstream123";
 
 const tokenStore = new Map();
 app.use(
-  cors({ origin: "https://postmatic.suryapratap.me", credentials: true })
+  // cors({ origin: "https://postmatic.suryapratap.me", credentials: true })
+  cors()
 );
 app.use(express.json());
 
@@ -46,6 +47,7 @@ app.get("/auth/callback", async (req, res) => {
 
     let { access_token } = tokenResponse.data;
     access_token = cleanAccessToken(access_token);
+    console.log("Access token received:", access_token);
 
     const userResponse = await axios.get(
       "https://graph.facebook.com/v16.0/me?fields=id,name,email,picture",
@@ -110,6 +112,7 @@ app.get("/api/feed/:userId", async (req, res) => {
       `https://graph.facebook.com/v16.0/${userId}/feed?fields=id,message,created_time,attachments`,
       { headers: { Authorization: `Bearer ${access_token}` } }
     );
+    console.log("Feed data:", feedResponse);
     return res.json({ feed: feedResponse.data.data });
   } catch (error) {
     console.error("Feed fetch error:", error.response?.data || error.message);
@@ -130,6 +133,7 @@ app.get("/api/reels/:userId", async (req, res) => {
       `https://graph.facebook.com/v16.0/${userId}/videos?fields=id,title,description,source`,
       { headers: { Authorization: `Bearer ${access_token}` } }
     );
+    console.log("Reels data:", reelsResponse);
     return res.json({ reels: reelsResponse.data.data });
   } catch (error) {
     console.error("Reels fetch error:", error.response?.data || error.message);
