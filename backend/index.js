@@ -45,19 +45,25 @@ app.get("/auth/callback", async (req, res) => {
       }
     );
 
-    let { access_token, user_id } = tokenResponse.data;
+    let { access_token } = tokenResponse.data;
     access_token = cleanAccessToken(access_token);
-    console.log("Access token received:", access_token);
 
-    // Store token
-    tokenStore.set(user_id, access_token);
+    const userResponse = await axios.get(
+      "https://graph.facebook.com/v22.0/me?fields=id,name,email,picture",
+      { headers: { Authorization: `Bearer ${access_token}` } }
+    );
+
+    const { id, name, email } = userResponse.data;
+    console.log("User data:", { id, name, email });
+
+    tokenStore.set(id, access_token);
 
     if (!process.env.FRONTEND_URL) {
       console.error("FRONTEND_URL is not set");
       return res.status(500).send("Server configuration error");
     }
 
-    const redirectUrl = `${process.env.FRONTEND_URL}/dashboard?userId=${user_id}`;
+    const redirectUrl = `${process.env.FRONTEND_URL}/dashboard?userId=${id}`;
     console.log("Redirecting to:", redirectUrl);
     return res.redirect(redirectUrl);
   } catch (error) {
@@ -85,11 +91,7 @@ app.get("/api/user/:userId", async (req, res) => {
     console.log("Fetching user data for userId:", userId);
     const userResponse = await axios.get(
       `https://graph.instagram.com/me?fields=id,username,account_type,media_count,profile_picture_url`,
-      {
-        params: {
-          access_token,
-        },
-      }
+      { headers: { Authorization: `Bearer ${access_token}` } }
     );
     console.log("User data response:", userResponse.data);
 
@@ -119,14 +121,8 @@ app.get("/api/feed/:userId", async (req, res) => {
 
   try {
     const feedResponse = await axios.get(
-      `https://graph.instagram.com/me/media`,
-      {
-        params: {
-          fields:
-            "id,caption,media_type,media_url,permalink,thumbnail_url,timestamp",
-          access_token,
-        },
-      }
+      `https://graph.instagram.com/me/media?fields=id,caption,media_type,media_url,thumbnail_url,permalink,timestamp`,
+      { headers: { Authorization: `Bearer ${access_token}` } }
     );
     return res.json({ feed: feedResponse.data.data });
   } catch (error) {
@@ -149,13 +145,8 @@ app.get("/api/reels/:userId", async (req, res) => {
 
   try {
     const feedResponse = await axios.get(
-      `https://graph.instagram.com/me/media`,
-      {
-        params: {
-          fields: "id,media_type,media_url,caption,permalink,timestamp",
-          access_token,
-        },
-      }
+      `https://graph.instagram.com/me/media?fields=id,media_type,media_url,caption,permalink,timestamp`,
+      { headers: { Authorization: `Bearer ${access_token}` } }
     );
     // Filter for videos (reels)
     const reels = (feedResponse.data.data || []).filter(
