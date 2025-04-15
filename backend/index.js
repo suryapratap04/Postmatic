@@ -9,10 +9,7 @@ const port = process.env.PORT || 5000;
 const VERIFY_TOKEN = "socialstream123";
 
 const tokenStore = new Map();
-app.use(
-  // cors({ origin: "https://postmatic.suryapratap.me", credentials: true })
-  cors()
-);
+app.use(cors());
 app.use(express.json());
 
 const cleanAccessToken = (token) => {
@@ -108,14 +105,20 @@ app.get("/api/feed/:userId", async (req, res) => {
   }
 
   try {
+    // Use Instagram Graph API endpoint for user media
     const feedResponse = await axios.get(
-      `https://graph.facebook.com/v22.0/${userId}/feed?fields=id,message,created_time,attachments`,
-      { headers: { Authorization: `Bearer ${access_token}` } }
+      `https://graph.instagram.com/me/media?fields=id,caption,media_type,media_url,permalink,timestamp&access_token=${access_token}`,
+      {
+        headers: { Authorization: `Bearer ${access_token}` },
+      }
     );
-    console.log("Feed data:", feedResponse);
+    console.log("Instagram Feed data:", feedResponse.data);
     return res.json({ feed: feedResponse.data.data });
   } catch (error) {
-    console.error("Feed fetch error:", error.response?.data || error.message);
+    console.error(
+      "Instagram Feed fetch error:",
+      error.response?.data || error.message
+    );
     return res.status(500).json({ message: "Failed to fetch feed" });
   }
 });
@@ -129,14 +132,18 @@ app.get("/api/reels/:userId", async (req, res) => {
   }
 
   try {
+    // Use Instagram Graph API to get reels (stories) - requires specific business account setup
     const reelsResponse = await axios.get(
-      `https://graph.facebook.com/v22.0/${userId}/videos?fields=id,title,description,source`,
+      `https://graph.instagram.com/${userId}/stories?fields=media_url,caption`,
       { headers: { Authorization: `Bearer ${access_token}` } }
     );
-    console.log("Reels data:", reelsResponse);
+    console.log("Instagram Reels data:", reelsResponse.data);
     return res.json({ reels: reelsResponse.data.data });
   } catch (error) {
-    console.error("Reels fetch error:", error.response?.data || error.message);
+    console.error(
+      "Instagram Reels fetch error:",
+      error.response?.data || error.message
+    );
     return res.status(500).json({ message: "Failed to fetch reels" });
   }
 });
@@ -155,8 +162,9 @@ app.post("/api/comment/:postId", async (req, res) => {
   }
 
   try {
+    //Use Instagram API to post comment
     const commentResponse = await axios.post(
-      `https://graph.facebook.com/v22.0/${postId}/comments`,
+      `https://graph.instagram.com/${postId}/comments`,
       { message },
       { headers: { Authorization: `Bearer ${access_token}` } }
     );
