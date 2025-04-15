@@ -52,7 +52,7 @@ app.get("/auth/callback", async (req, res) => {
       { headers: { Authorization: `Bearer ${access_token}` } }
     );
 
-    const { id, name, email, picture } = userResponse.data;
+    const { id, name, email } = userResponse.data;
     console.log("User data:", { id, name, email });
 
     tokenStore.set(id, access_token);
