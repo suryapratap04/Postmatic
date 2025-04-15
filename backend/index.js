@@ -5,7 +5,7 @@ dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 5000;
-const VERIFY_TOKEN = process.env.VERIFY_TOKEN;
+const VERIFY_TOKEN = "socialstream123";
 
 app.use(cors());
 
