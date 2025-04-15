@@ -82,9 +82,11 @@ app.get("/api/user/:userId", async (req, res) => {
   const access_token = tokenStore.get(userId);
 
   if (!access_token) {
+    console.log(`No access token found for userId: ${userId}`);
     return res.status(401).json({ message: "Invalid or expired user" });
   }
 
+  console.log(`Access token found for userId ${userId}: ${access_token}`);
   try {
     console.log("Fetching user data for userId:", userId);
     const userResponse = await axios.get(
