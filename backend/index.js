@@ -60,6 +60,7 @@ app.get("/auth/callback", async (req, res) => {
 
     const { id, name, email } = userResponse.data;
     console.log("User data:", userResponse.data);
+    console.log("User", id, "Name:", name, "Email:", email);
     return res.redirect(
       `${process.env.FRONTEND_URL}/dashboard?token=${access_token}`
     );

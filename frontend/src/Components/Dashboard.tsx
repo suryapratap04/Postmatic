@@ -1,4 +1,3 @@
-// dashboard.jsx (React example)
 import { useEffect, useState } from "react";
 
 const Dashboard = () => {
@@ -6,6 +5,14 @@ const Dashboard = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (window.location.hash === "#_=_") {
+      window.history.replaceState(
+        null,
+        "",
+        window.location.pathname + window.location.search
+      );
+    }
+
     // Get token from URL query parameter
     const urlParams = new URLSearchParams(window.location.search);
     const tokenFromUrl = urlParams.get("token");
