@@ -26,7 +26,6 @@ exports.AuthCallback = async (req, res) => {
           client_id: process.env.INSTAGRAM_APP_ID,
           client_secret: process.env.INSTAGRAM_APP_SECRET,
           code,
-          grant_type: "authorization_code",
           redirect_uri: encodeURI(
             `${process.env.INSTAGRAM_REDIRECT_URI}/auth/callback`
           ),
