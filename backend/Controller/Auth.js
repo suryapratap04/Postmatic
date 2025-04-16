@@ -50,7 +50,7 @@ exports.AuthCallback = async (req, res) => {
         },
       }
     );
-    console.log("LOng ", longLivedAccessToken.data);
+    console.log("LOng ", longLivedToken.data);
     console.log("Long-lived access token:", longLivedToken.data.access_token);
 
     const longLivedAccessToken = longLivedToken.data.access_token;
