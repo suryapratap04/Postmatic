@@ -16,7 +16,7 @@ interface AppContextType {
   setUser: (user: User | null) => void;
   onLogout: () => void;
   handleLogin: () => void;
-  fetchUserProfile: (userId: string) => Promise<void>;
+  fetchUserProfile: () => Promise<void>;
 }
 
 export const AppContext = createContext<AppContextType | null>(null);
@@ -62,19 +62,28 @@ export default function AppContextProvider({
     window.location.href = instagramAuthUrl;
   };
 
-  const fetchUserProfile = async (userId: string) => {
-    try {
-      const response = await fetch(`/api/user/${userId}`);
-      if (response.ok) {
-        const data = await response.json();
-        setUser(data.user);
-      } else {
-        console.error("Failed to fetch user profile:", response.statusText);
+  const fetchUserProfile = async () => {
+    const userId = new URLSearchParams(window.location.search).get("user_id");
+    if (userId) {
+      try {
+        const response = await fetch(`/api/user/${userId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setUser(data.user);
+        } else {
+          console.error("Failed to fetch user profile:", response.statusText);
+        }
+      } catch (error) {
+        console.error("Error fetching user profile:", error);
       }
-    } catch (error) {
-      console.error("Error fetching user profile:", error);
     }
   };
+
+  useEffect(() => {
+    if (isLoggedIn) {
+      fetchUserProfile();
+    }
+  }, [isLoggedIn]);
 
   const value: AppContextType = {
     isLoggedIn,

@@ -1,21 +1,31 @@
-import Sidebar from "../components/Sidebar";
-import MediaFeed from "../components/MediaFeed";
-import ProfileCard from "../components/ProfileCard";
-import { useContext } from "react";
+import { useEffect, useContext } from "react";
+import { useNavigate } from "react-router-dom";
 import { AppContext } from "../context/AppContext";
 
 export default function Dashboard() {
-  const { user } = useContext(AppContext)!;
+  const { isLoggedIn, user, fetchUserProfile } = useContext(AppContext) || {};
+  const navigate = useNavigate();
 
-  if (!user) return <p>Please login first.</p>;
+  useEffect(() => {
+    if (!isLoggedIn) {
+      navigate("/login");
+    } else {
+      if (fetchUserProfile) {
+        fetchUserProfile();
+      }
+    }
+  }, [isLoggedIn, navigate]);
+
+  if (!user) {
+    return <div>Loading...</div>;
+  }
 
   return (
-    <div className="flex">
-      <Sidebar />
-      <div className="w-3/4 p-6">
-        <ProfileCard />
-        <MediaFeed />
-      </div>
+    <div>
+      <h1>Welcome to the Dashboard</h1>
+      <p>Username: {user.username}</p>
+      <p>User ID: {user.id}</p>
+      {/* Render dashboard content */}
     </div>
   );
 }
