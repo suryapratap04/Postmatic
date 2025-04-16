@@ -2,14 +2,7 @@ const axios = require("axios");
 const { tokenStore } = require("../index");
 
 exports.AuthCallback = async (req, res) => {
-  const { code, error, error_reason } = req.query;
-
-  if (error) {
-    console.error("Instagram auth failed:", error_reason);
-    return res.redirect(
-      `${process.env.FRONTEND_URL}/error?reason=${error_reason}`
-    );
-  }
+  const { code } = req.query;
 
   if (!code) {
     return res.status(400).json({
@@ -17,6 +10,7 @@ exports.AuthCallback = async (req, res) => {
       message: "Authorization code is required",
     });
   }
+  console.log("Received code:", code);
 
   try {
     const tokenResponse = await axios.post(
@@ -34,8 +28,12 @@ exports.AuthCallback = async (req, res) => {
         },
       }
     );
+    console.log("Token response:", tokenResponse.data);
 
     const { access_token, user_id } = tokenResponse.data.data[0];
+
+    console.log("Access token:", access_token);
+    console.log("User ID:", user_id);
 
     // Get long-lived token (60 days)
     const longLivedToken = await axios.get(
@@ -48,6 +46,7 @@ exports.AuthCallback = async (req, res) => {
         },
       }
     );
+    console.log("Long-lived access token:", longLivedToken.data.access_token);
 
     const longLivedAccessToken = longLivedToken.data.access_token;
 
@@ -61,6 +60,7 @@ exports.AuthCallback = async (req, res) => {
         },
       }
     );
+    console.log("User profile response:", profileResponse.data);
 
     // Store token securely (consider encryption)
     tokenStore.set(user_id, {
