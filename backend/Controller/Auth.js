@@ -18,19 +18,19 @@ exports.AuthCallback = async (req, res) => {
     console.log("ID",process.env.INSTAGRAM_APP_ID);
     console.log("Secret",process.env.INSTAGRAM_APP_SECRET);
     console.log("Redirect URI",process.env.INSTAGRAM_REDIRECT_URI);
+    const payload = new URLSearchParams();
+    payload.append("client_id", process.env.INSTAGRAM_APP_ID);
+    payload.append("client_secret", process.env.INSTAGRAM_APP_SECRET);
+    payload.append("grant_type", "authorization_code");
+    payload.append("code", code);
+    payload.append(
+      "redirect_uri",
+      `${process.env.INSTAGRAM_REDIRECT_URI}/auth/callback`
+    );
+
     const tokenResponse = await axios.post(
       "https://api.instagram.com/oauth/access_token",
-      null,
-      {
-        params: {
-          client_id: process.env.INSTAGRAM_APP_ID,
-          client_secret: process.env.INSTAGRAM_APP_SECRET,
-          code,
-          redirect_uri: encodeURI(
-            `${process.env.INSTAGRAM_REDIRECT_URI}/auth/callback`
-          ),
-        },
-      }
+      payload
     );
     console.log("Token response:", tokenResponse.data);
 
