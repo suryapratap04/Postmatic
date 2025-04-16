@@ -1,230 +1,21 @@
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
-const axios = require("axios");
 dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 5000;
 const VERIFY_TOKEN = "socialstream123";
 
-const tokenStore = new Map();
+exports.tokenStore = new Map();
 app.use(cors());
 app.use(express.json());
 
-const cleanAccessToken = (token) => {
-  if (!token || typeof token !== "string") return token;
-  return token.replace(/#_=_$/, "");
-};
+const { AuthRoutes } = require("./Routes/AuthRoutes");
+const { UserRoutes } = require("./Routes/UserRoutes");
 
-// Instagram OAuth callback
-app.get("/auth/callback", async (req, res) => {
-  const { code } = req.query;
-
-  if (!code) {
-    console.error("Authorization code is missing.");
-    return res
-      .status(400)
-      .json({ message: "Authorization code is missing.", success: false });
-  }
-  console.log("Received authorization code:", code);
-
-  try {
-    const tokenResponse = await axios.post(
-      "https://graph.facebook.com/v22.0/oauth/access_token",
-      null,
-      {
-        params: {
-          client_id: process.env.FACEBOOK_APP_ID,
-          client_secret: process.env.FACEBOOK_APP_SECRET,
-          code,
-          redirect_uri: encodeURI(`${process.env.BACKEND_URL}/auth/callback`),
-        },
-      }
-    );
-
-    let { access_token } = tokenResponse.data;
-    access_token = cleanAccessToken(access_token);
-
-    const userResponse = await axios.get(
-      "https://graph.facebook.com/v22.0/me?fields=id,name,email,picture",
-      { headers: { Authorization: `Bearer ${access_token}` } }
-    );
-
-    const { id, name, email } = userResponse.data;
-    console.log("User data:", { id, name, email });
-
-    tokenStore.set(id, access_token);
-
-    if (!process.env.FRONTEND_URL) {
-      console.error("FRONTEND_URL is not set");
-      return res.status(500).send("Server configuration error");
-    }
-
-    const redirectUrl = `${process.env.FRONTEND_URL}/dashboard?userId=${id}`;
-    console.log("Redirecting to:", redirectUrl);
-    return res.redirect(redirectUrl);
-  } catch (error) {
-    console.error(
-      "Instagram Callback Error:",
-      error.response?.data || error.message
-    );
-    return res.status(500).json({
-      message: "Instagram callback failed",
-      error: error.response?.data || error.message,
-    });
-  }
-});
-
-// Fetch Instagram user profile
-app.get("/api/user/:userId", async (req, res) => {
-  const { userId } = req.params;
-  const access_token = tokenStore.get(userId);
-
-  if (!access_token) {
-    console.log(`No access token found for userId: ${userId}`);
-    return res.status(401).json({ message: "Invalid or expired user" });
-  }
-
-  console.log(`Access token found for userId ${userId}: ${access_token}`);
-  try {
-    console.log("Fetching user data for userId:", userId);
-    const userResponse = await axios.get(
-      `https://graph.facebook.com/v16.0/${userId}?fields=id,name,email,picture`,
-      { headers: { Authorization: `Bearer ${access_token}` } }
-    );
-    console.log("User data response:", userResponse.data);
-
-    if (userResponse.data.error) {
-      console.error("Instagram API error:", userResponse.data.error);
-      return res.status(500).json({
-        message: "Failed to fetch user data",
-        error: userResponse.data.error,
-      });
-    }
-
-    return res.json({ user: userResponse.data });
-  } catch (error) {
-    console.error("User fetch error:", error.response?.data || error.message);
-    return res.status(500).json({ message: "Failed to fetch user data" });
-  }
-});
-
-// Fetch Instagram user media (feed)
-app.get("/api/feed/:userId", async (req, res) => {
-  const { userId } = req.params;
-  const access_token = tokenStore.get(userId);
-
-  if (!access_token) {
-    return res.status(401).json({ message: "Invalid or expired user" });
-  }
-
-  try {
-    const feedResponse = await axios.get(
-      `https://graph.instagram.com/me/media?fields=id,caption,media_type,media_url,thumbnail_url,permalink,timestamp`,
-      { headers: { Authorization: `Bearer ${access_token}` } }
-    );
-    return res.json({ feed: feedResponse.data.data });
-  } catch (error) {
-    console.error(
-      "Instagram Feed fetch error:",
-      error.response?.data || error.message
-    );
-    return res.status(500).json({ message: "Failed to fetch feed" });
-  }
-});
-
-// Fetch Instagram reels (as videos in media)
-app.get("/api/reels/:userId", async (req, res) => {
-  const { userId } = req.params;
-  const access_token = tokenStore.get(userId);
-
-  if (!access_token) {
-    return res.status(401).json({ message: "Invalid or expired user" });
-  }
-
-  try {
-    const feedResponse = await axios.get(
-      `https://graph.instagram.com/me/media?fields=id,media_type,media_url,caption,permalink,timestamp`,
-      { headers: { Authorization: `Bearer ${access_token}` } }
-    );
-    // Filter for videos (reels)
-    const reels = (feedResponse.data.data || []).filter(
-      (item) => item.media_type === "VIDEO"
-    );
-    return res.json({ reels });
-  } catch (error) {
-    console.error(
-      "Instagram Reels fetch error:",
-      error.response?.data || error.message
-    );
-    return res.status(500).json({ message: "Failed to fetch reels" });
-  }
-});
-
-// Post a comment on a media
-app.post("/api/comment/:mediaId", async (req, res) => {
-  const { mediaId } = req.params;
-  const { userId, message } = req.body;
-  const access_token = tokenStore.get(userId);
-
-  if (!access_token) {
-    return res.status(401).json({ message: "Invalid or expired user" });
-  }
-
-  if (!message) {
-    return res.status(400).json({ message: "Comment message is required" });
-  }
-
-  try {
-    const commentResponse = await axios.post(
-      `https://graph.instagram.com/${mediaId}/comments`,
-      null,
-      {
-        params: {
-          message,
-          access_token,
-        },
-      }
-    );
-    return res.json({ comment: commentResponse.data });
-  } catch (error) {
-    console.error("Comment post error:", error.response?.data || error.message);
-    return res.status(500).json({ message: "Failed to post comment" });
-  }
-});
-
-// Reply to a comment
-app.post("/api/comment/:commentId/reply", async (req, res) => {
-  const { commentId } = req.params;
-  const { userId, message } = req.body;
-  const access_token = tokenStore.get(userId);
-
-  if (!access_token) {
-    return res.status(401).json({ message: "Invalid or expired user" });
-  }
-
-  if (!message) {
-    return res.status(400).json({ message: "Reply message is required" });
-  }
-
-  try {
-    const replyResponse = await axios.post(
-      `https://graph.instagram.com/${commentId}/replies`,
-      null,
-      {
-        params: {
-          message,
-          access_token,
-        },
-      }
-    );
-    return res.json({ reply: replyResponse.data });
-  } catch (error) {
-    console.error("Reply post error:", error.response?.data || error.message);
-    return res.status(500).json({ message: "Failed to post reply" });
-  }
-});
+app.use("/auth", AuthRoutes);
+app.use("/api", UserRoutes);
 
 // Webhook verification
 app.get("/webhook", (req, res) => {
@@ -233,15 +24,36 @@ app.get("/webhook", (req, res) => {
   const challenge = req.query["hub.challenge"];
 
   if (mode === "subscribe" && token === VERIFY_TOKEN) {
+    console.log("Webhook verified!");
     return res.status(200).send(challenge);
+  } else {
+    console.status(403).json({ error: "Verification failed" });
   }
-  return res.sendStatus(403);
 });
 
 // Webhook event handler
 app.post("/webhook", (req, res) => {
-  console.log("Webhook event received:", req.body);
-  return res.status(200).send("EVENT_RECEIVED");
+  const body = req.body;
+
+  if (body.object === "instagram") {
+    body.entry.forEach(function (entry) {
+      let webhook_event = entry.messaging[0];
+      console.log(webhook_event);
+
+      let sender_psid = entry.sender.id;
+      console.log("Sender PSID: " + sender_psid);
+
+      if (webhook_event.message) {
+        handleMessage(sender_psid, webhook_event.message);
+      } else if (webhook_event.postback) {
+        handlePostback(sender_psid, webhook_event.postback);
+      }
+    });
+
+    return res.status(200).send("EVENT_RECEIVED");
+  } else {
+    return res.sendStatus(404);
+  }
 });
 
 app.listen(port, () => {

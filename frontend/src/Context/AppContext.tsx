@@ -2,9 +2,9 @@ import { createContext, useState, useEffect, ReactNode } from "react";
 
 interface User {
   id: string;
-  name: string;
-  email?: string;
-  picture?: { data: { url: string } };
+  username: string;
+  account_type?: string;
+  media_count?: number;
 }
 
 interface AppContextType {
@@ -16,6 +16,7 @@ interface AppContextType {
   setUser: (user: User | null) => void;
   onLogout: () => void;
   handleLogin: () => void;
+  fetchUserProfile: () => Promise<void>;
 }
 
 export const AppContext = createContext<AppContextType | null>(null);
@@ -30,6 +31,8 @@ export default function AppContextProvider({
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [user, setUserState] = useState<User | null>(null);
+  const INSTAGRAM_APP_ID = 1384533765881235;
+  const redirectUri = "https://postmatic.onrender.com/auth/callback";
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
@@ -57,12 +60,34 @@ export default function AppContextProvider({
   };
 
   const handleLogin = () => {
-    const redirectUri = "https://postmatic.onrender.com/auth/callback";
-    const instagramAuthUrl = `https://www.facebook.com/v22.0/dialog/oauth?client_id=${1384533765881235}&redirect_uri=${encodeURIComponent(
+    const instagramAuthUrl = `https://www.instagram.com/oauth/authorize?client_id=${INSTAGRAM_APP_ID}&redirect_uri=${encodeURIComponent(
       redirectUri
-    )}&scope=instagram_basic,instagram_content_publish,instagram_manage_comments&response_type=code`;
+    )}&scope=instagram_business_basic,instagram_business_content_publish,instagram_business_manage_comments&response_type=code`;
     window.location.href = instagramAuthUrl;
   };
+
+  const fetchUserProfile = async () => {
+    const userId = new URLSearchParams(window.location.search).get("user_id");
+    if (userId) {
+      try {
+        const response = await fetch(`/api/user/${userId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setUser(data.user);
+        } else {
+          console.error("Failed to fetch user profile:", response.statusText);
+        }
+      } catch (error) {
+        console.error("Error fetching user profile:", error);
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (isLoggedIn) {
+      fetchUserProfile();
+    }
+  }, [isLoggedIn]);
 
   const value: AppContextType = {
     isLoggedIn,
@@ -73,6 +98,7 @@ export default function AppContextProvider({
     setUser,
     onLogout,
     handleLogin,
+    fetchUserProfile,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
