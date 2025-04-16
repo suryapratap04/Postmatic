@@ -16,7 +16,7 @@ interface AppContextType {
   setUser: (user: User | null) => void;
   onLogout: () => void;
   handleLogin: () => void;
-  fetchUserProfile: () => Promise<void>;
+  fetchUserProfile: (userId: string) => Promise<void>;
 }
 
 export const AppContext = createContext<AppContextType | null>(null);
@@ -31,8 +31,6 @@ export default function AppContextProvider({
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [user, setUserState] = useState<User | null>(null);
-  // const INSTAGRAM_APP_ID = 1384533765881235;
-  // const redirectUri = "https://postmatic.onrender.com/auth/callback";
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
@@ -64,28 +62,19 @@ export default function AppContextProvider({
     window.location.href = instagramAuthUrl;
   };
 
-  const fetchUserProfile = async () => {
-    const userId = new URLSearchParams(window.location.search).get("user_id");
-    if (userId) {
-      try {
-        const response = await fetch(`/api/user/${userId}`);
-        if (response.ok) {
-          const data = await response.json();
-          setUser(data.user);
-        } else {
-          console.error("Failed to fetch user profile:", response.statusText);
-        }
-      } catch (error) {
-        console.error("Error fetching user profile:", error);
+  const fetchUserProfile = async (userId: string) => {
+    try {
+      const response = await fetch(`/api/user/${userId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setUser(data.user);
+      } else {
+        console.error("Failed to fetch user profile:", response.statusText);
       }
+    } catch (error) {
+      console.error("Error fetching user profile:", error);
     }
   };
-
-  useEffect(() => {
-    if (isLoggedIn) {
-      fetchUserProfile();
-    }
-  }, [isLoggedIn]);
 
   const value: AppContextType = {
     isLoggedIn,

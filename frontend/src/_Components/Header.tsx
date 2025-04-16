@@ -2,7 +2,7 @@
 import { Instagram, LogOut, Heart, MessageCircle } from "lucide-react";
 import LoginModal from "./LoginModal";
 import { useContext, useState } from "react";
-import { AppContext } from "../Context/AppContext";
+import { AppContext } from "../context/AppContext";
 import { useNavigate } from "react-router-dom";
 import { mockUser, mockPosts, mockReels, mockUsers } from "../data/mock";
 import Avatar from "./Avatar";

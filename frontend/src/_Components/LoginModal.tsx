@@ -1,6 +1,6 @@
 import React, { useContext } from "react";
 import { Instagram, X } from "lucide-react";
-import { AppContext } from "../Context/AppContext";
+import { AppContext } from "../context/AppContext";
 
 const LoginModal: React.FC = () => {
   const context = useContext(AppContext);

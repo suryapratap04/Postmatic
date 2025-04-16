@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from "react";
-import { AppContext } from "../Context/AppContext";
+import { AppContext } from "../context/AppContext";
 import { useNavigate } from "react-router-dom";
 import ProfileSection from "./ProfileSection";
 import FeedSection from "./FeedSection";

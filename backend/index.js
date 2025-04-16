@@ -27,7 +27,7 @@ app.get("/webhook", (req, res) => {
     console.log("Webhook verified!");
     return res.status(200).send(challenge);
   } else {
-    console.status(403).json({ error: "Verification failed" });
+    res.status(403).json({ error: "Verification failed" });
   }
 });
 
@@ -36,7 +36,8 @@ app.post("/webhook", (req, res) => {
   const body = req.body;
 
   if (body.object === "instagram") {
-    body.entry.forEach(function (entry) {
+    body.entry.forEach((entry) => {
+      console.log("Entry received:", entry);
       let webhook_event = entry.messaging[0];
       console.log(webhook_event);
 

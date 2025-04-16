@@ -1,13 +1,14 @@
 import { Routes, Route } from "react-router-dom";
-import Header from "./Components/Header";
-import Dashboard from "./Components/Dashboard";
+import HomePage from "./pages/HomePage";
+import Dashboard from "./pages/Dashboard";
 
 function App() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Routes>
-        <Route path="/" element={<Header />} />
+        <Route path="/" element={<HomePage />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/login" element={<HomePage />} />
       </Routes>
     </div>
   );
