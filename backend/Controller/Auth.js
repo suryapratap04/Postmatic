@@ -1,5 +1,7 @@
 const axios = require("axios");
 const { tokenStore } = require("../index");
+const dotenv = require("dotenv");
+dotenv.config();
 
 exports.AuthCallback = async (req, res) => {
   const { code } = req.query;
@@ -13,6 +15,9 @@ exports.AuthCallback = async (req, res) => {
   console.log("Received code:", code);
 
   try {
+    console.log("ID",process.env.INSTAGRAM_APP_ID);
+    console.log("Secret",process.env.INSTAGRAM_APP_SECRET);
+    console.log("Redirect URI",process.env.INSTAGRAM_REDIRECT_URI);
     const tokenResponse = await axios.post(
       "https://api.instagram.com/oauth/access_token",
       null,
