@@ -52,10 +52,10 @@ const Dashboard = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!isLoggedIn) {
-      navigate("/login");
-      return;
-    }
+    // if (!isLoggedIn) {
+    //   navigate("/login");
+    //   return;
+    // }
 
     if (user && user.id) {
       fetchFeed(user.id);
