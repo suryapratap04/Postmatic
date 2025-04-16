@@ -15,9 +15,9 @@ exports.AuthCallback = async (req, res) => {
   console.log("Received code:", code);
 
   try {
-    console.log("ID",process.env.INSTAGRAM_APP_ID);
-    console.log("Secret",process.env.INSTAGRAM_APP_SECRET);
-    console.log("Redirect URI",process.env.INSTAGRAM_REDIRECT_URI);
+    console.log("ID", process.env.INSTAGRAM_APP_ID);
+    console.log("Secret", process.env.INSTAGRAM_APP_SECRET);
+    console.log("Redirect URI", process.env.INSTAGRAM_REDIRECT_URI);
     const payload = new URLSearchParams();
     payload.append("client_id", process.env.INSTAGRAM_APP_ID);
     payload.append("client_secret", process.env.INSTAGRAM_APP_SECRET);
@@ -34,12 +34,7 @@ exports.AuthCallback = async (req, res) => {
     );
     console.log("Token response:", tokenResponse.data);
 
-    let { access_token, user_id } = tokenResponse.data;
-    access_token = (access_token) => {
-      if (!access_token || typeof access_token !== "string")
-        return access_token;
-      return access_token.replace(/#_=_$/, "");
-    };
+    const { access_token, user_id } = tokenResponse.data;
 
     console.log("Access token:", access_token);
     console.log("User ID:", user_id);
@@ -55,6 +50,7 @@ exports.AuthCallback = async (req, res) => {
         },
       }
     );
+    console.log("LOng ", longLivedAccessToken.data);
     console.log("Long-lived access token:", longLivedToken.data.access_token);
 
     const longLivedAccessToken = longLivedToken.data.access_token;
