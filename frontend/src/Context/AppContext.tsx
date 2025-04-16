@@ -31,8 +31,8 @@ export default function AppContextProvider({
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [user, setUserState] = useState<User | null>(null);
-  const INSTAGRAM_APP_ID = 1384533765881235;
-  const redirectUri = "https://postmatic.onrender.com/auth/callback";
+  // const INSTAGRAM_APP_ID = 1384533765881235;
+  // const redirectUri = "https://postmatic.onrender.com/auth/callback";
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");

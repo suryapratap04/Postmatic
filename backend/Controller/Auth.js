@@ -15,22 +15,27 @@ exports.AuthCallback = async (req, res) => {
   try {
     const tokenResponse = await axios.post(
       "https://api.instagram.com/oauth/access_token",
-      new URLSearchParams({
-        client_id: process.env.INSTAGRAM_APP_ID,
-        client_secret: process.env.INSTAGRAM_APP_SECRET,
-        code,
-        grant_type: "authorization_code",
-        redirect_uri: process.env.INSTAGRAM_REDIRECT_URI,
-      }),
+      null,
       {
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
+        params: {
+          client_id: process.env.INSTAGRAM_APP_ID,
+          client_secret: process.env.INSTAGRAM_APP_SECRET,
+          code,
+          grant_type: "authorization_code",
+          redirect_uri: encodeURI(
+            `${process.env.INSTAGRAM_REDIRECT_URI}/auth/callback`
+          ),
         },
       }
     );
     console.log("Token response:", tokenResponse.data);
 
-    const { access_token, user_id } = tokenResponse.data.data[0];
+    let { access_token, user_id } = tokenResponse.data.data[0];
+    access_token = (access_token) => {
+      if (!access_token || typeof access_token !== "string")
+        return access_token;
+      return access_token.replace(/#_=_$/, "");
+    };
 
     console.log("Access token:", access_token);
     console.log("User ID:", user_id);
