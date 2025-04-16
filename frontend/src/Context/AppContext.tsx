@@ -60,9 +60,7 @@ export default function AppContextProvider({
   };
 
   const handleLogin = () => {
-    const instagramAuthUrl = `https://www.instagram.com/oauth/authorize?client_id=${INSTAGRAM_APP_ID}&redirect_uri=${encodeURIComponent(
-      redirectUri
-    )}&scope=instagram_business_basic,instagram_business_content_publish,instagram_business_manage_comments&response_type=code`;
+    const instagramAuthUrl = `https://www.instagram.com/oauth/authorize?enable_fb_login=0&force_authentication=1&client_id=680962664344617&redirect_uri=https://postmatic.onrender.com/auth/callback&response_type=code&scope=instagram_business_basic%2Cinstagram_business_manage_messages%2Cinstagram_business_manage_comments%2Cinstagram_business_content_publish%2Cinstagram_business_manage_insights`;
     window.location.href = instagramAuthUrl;
   };
 
