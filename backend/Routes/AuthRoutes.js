@@ -1,7 +1,8 @@
-const { Router } = require("express");
+const express = require("express");
+const router = express.Router();
 
 const { AuthCallback } = require("../Controller/Auth");
 
-Router.get("/callback", AuthCallback);
+router.get("/callback", AuthCallback);
 
-module.exports = Router;
+module.exports = router;

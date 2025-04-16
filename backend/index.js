@@ -11,8 +11,8 @@ exports.tokenStore = new Map();
 app.use(cors());
 app.use(express.json());
 
-const { AuthRoutes } = require("./Routes/AuthRoutes");
-const { UserRoutes } = require("./Routes/UserRoutes");
+const AuthRoutes = require("./Routes/AuthRoutes");
+const UserRoutes = require("./Routes/UserRoutes");
 
 app.use("/auth", AuthRoutes);
 app.use("/api", UserRoutes);

@@ -1,4 +1,5 @@
-const { Router } = require("express");
+const express = require("express");
+const router = express.Router();
 
 const {
   UserProfile,
@@ -8,10 +9,10 @@ const {
   ReplyComment,
 } = require("../Controller/User");
 
-Router.get("/user/:userId", UserProfile);
-Router.get("/feed/:userId", UserMedia);
-Router.get("/reels/:userId", UserReels);
-Router.post("/comment/:mediaId", PostComment);
-Router.post("/comment/:commentId/reply", ReplyComment);
+router.get("/user/:userId", UserProfile);
+router.get("/feed/:userId", UserMedia);
+router.get("/reels/:userId", UserReels);
+router.post("/comment/:mediaId", PostComment);
+router.post("/comment/:commentId/reply", ReplyComment);
 
-module.exports = Router;
+module.exports = router;
