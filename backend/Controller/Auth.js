@@ -34,7 +34,7 @@ exports.AuthCallback = async (req, res) => {
     );
     console.log("Token response:", tokenResponse.data);
 
-    let { access_token, user_id } = tokenResponse.data.data[0];
+    let { access_token, user_id } = tokenResponse.data;
     access_token = (access_token) => {
       if (!access_token || typeof access_token !== "string")
         return access_token;
