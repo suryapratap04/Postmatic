@@ -34,8 +34,7 @@ exports.AuthCallback = async (req, res) => {
     );
     console.log("Token response:", tokenResponse.data);
 
-    const { access_token, user_id } = tokenResponse.data;
-
+    let { access_token, user_id } = tokenResponse.data;
     console.log("Access token:", access_token);
     console.log("User ID:", user_id);
 
@@ -50,33 +49,30 @@ exports.AuthCallback = async (req, res) => {
         },
       }
     );
-    console.log("LOng ", longLivedToken.data);
-    console.log("Long-lived access token:", longLivedToken.data.access_token);
+    console.log("Long-lived token:", longLivedToken.data);
 
     const longLivedAccessToken = longLivedToken.data.access_token;
 
-    // Get user profile data
-    const profileResponse = await axios.get(
-      `https://graph.instagram.com/v22.0/${user_id}`,
-      {
-        params: {
-          fields: "id,username,account_type,media_count",
-          access_token: longLivedAccessToken,
-        },
-      }
-    );
+    // Get user profile data (corrected to /me endpoint)
+    const profileResponse = await axios.get(`https://graph.instagram.com/me`, {
+      params: {
+        fields: "id,username,account_type,media_count",
+        access_token: longLivedAccessToken,
+      },
+    });
     console.log("User profile response:", profileResponse.data);
 
     // Store token securely (consider encryption)
-    tokenStore.set(user_id, {
+    tokenStore.set(profileResponse.data.id, {
       token: longLivedAccessToken,
       expires: Date.now() + longLivedToken.data.expires_in * 1000,
     });
 
     // Redirect with user data
     const redirectUrl = new URL(`${process.env.FRONTEND_URL}/dashboard`);
-    redirectUrl.searchParams.set("user_id", user_id);
+    redirectUrl.searchParams.set("user_id", profileResponse.data.id);
     redirectUrl.searchParams.set("username", profileResponse.data.username);
+    console.log("redirect URL:", redirectUrl.toString());
 
     return res.redirect(redirectUrl.toString());
   } catch (error) {
@@ -84,7 +80,7 @@ exports.AuthCallback = async (req, res) => {
       "Instagram auth error:",
       error.response?.data || error.message
     );
-    const errorCode = error.response?.data?.error_code || "server_error";
+    const errorCode = error.response?.data?.error?.code || "server_error";
     res.redirect(`${process.env.FRONTEND_URL}/error?code=${errorCode}`);
   }
 };
