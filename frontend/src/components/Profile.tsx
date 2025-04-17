@@ -7,14 +7,14 @@ export default function Profile() {
     throw new Error("AppContext must be used within an AppContextProvider");
   }
   const { user, setUser } = context;
-  if (!user) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-2xl font-bold">User not found</h1>
-        <p className="mt-4">Please login to view your profile.</p>
-      </div>
-    );
-  }
+  // if (!user) {
+  //   return (
+  //     <div className="container mx-auto px-4 py-8">
+  //       <h1 className="text-2xl font-bold">User not found</h1>
+  //       <p className="mt-4">Please login to view your profile.</p>
+  //     </div>
+  //   );
+  // }
   const getUserProfile = async () => {
     try {
       const response = await fetch(
