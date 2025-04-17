@@ -7,14 +7,14 @@ export default function Media() {
     throw new Error("AppContext must be used within an AppContextProvider");
   }
   const { user, media, setMedia } = context;
-  if (!media) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-2xl font-bold">Media not found</h1>
-        <p className="mt-4">Please login to view your Media.</p>
-      </div>
-    );
-  }
+  // if (!media) {
+  //   return (
+  //     <div className="container mx-auto px-4 py-8">
+  //       <h1 className="text-2xl font-bold">Media not found</h1>
+  //       <p className="mt-4">Please login to view your Media.</p>
+  //     </div>
+  //   );
+  // }
   const getUserProfile = async () => {
     try {
       const response = await fetch(
